@@ -15,4 +15,4 @@ local x, y, z, facing = lama.getPosition()
 lama.setPosition( x, y, z[, facing] )
 ```
 #### For more information:
-https://github.com/lupus590/CC-Hive/wiki/Lama
+http://github.com/KingofGamesYami/LAMA/wiki
