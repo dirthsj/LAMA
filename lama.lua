@@ -18,8 +18,11 @@ end
 --anything declared as env.name will end up in the loaded API
 local env = getfenv()
 
---Fuel tracking
 local fuel = {}
+local facing = {}
+local position = {}
+
+--Fuel tracking
 fuel.load = function() --loading fuel data
 	if fs.exists( ".lama/fuel" ) then --if we've got previous data, we want to use it
 		local file = fs.open( ".lama/fuel", "r" )
@@ -37,7 +40,6 @@ fuel.save = function() --save fuel data
 end
 
 --facing tracking
-local facing = {}
 facing.turnRight = function() --changes the facing clockwise (on a compass) once
 	if facing.face == "north" then
 		facing.face = "east"
@@ -62,22 +64,20 @@ facing.load = function() --loads facing / current movement direction
 		facing.face, facing.direction = unpack( textutils.unserialize( file.readAll() ) )
 		file.close()
 	else --otherwise, try to locate via gps
-		local x, y, z = position.x, position.y, position.z
-		if turtle.forward() then
+		local x, y, z = gps.locate(1)
+		if x and turtle.forward() then
 			local newx, newy, newz = gps.locate(1)
 			if not newx then --we didn't get a location
 				facing.face = "north" --default
 			elseif newx > x then
-				facing.face = "north"
-			elseif newx < x then
-				facing.face = "south"
-			elseif newz > z then
 				facing.face = "east"
-			elseif newz < z then
+			elseif newx < x then
 				facing.face = "west"
+			elseif newz > z then
+				facing.face = "south"
+			elseif newz < z then
+				facing.face = "north"
 			end
-			position.save() --save our position
-			facing.save()
 		else
 			facing.face = "north" --we couldn't move forward, something was obstructing
 		end
@@ -85,7 +85,6 @@ facing.load = function() --loads facing / current movement direction
 end
 
 --position tracking
-local position = {}
 position.save = function() --saves position (x, y, z)
 	position.update() --update the position based on direction and fuel level, then save it to a file
 	local file = fs.open( ".lama/position", "w" )
@@ -111,13 +110,13 @@ end
 position.update = function() --updates the position of the turtle
 	local diff = fuel.amount - turtle.getFuelLevel()
 	if diff > 0 then --if we've spent fuel (ei moved), we'll need to move that number in a direction
-		if facing.direction == 'north' then
+		if facing.direction == 'east' then
 			position.x = position.x + diff
-		elseif facing.direction == "south" then
-			position.x = position.x - diff
-		elseif facing.direction == "east" then
-			position.z = position.z + diff
 		elseif facing.direction == "west" then
+			position.x = position.x - diff
+		elseif facing.direction == "south" then
+			position.z = position.z + diff
+		elseif facing.direction == "north" then
 			position.z = position.z - diff
 		elseif facing.direction == "up" then
 			position.y = position.y + diff
@@ -186,7 +185,7 @@ env.turnLeft = function() --env.turnRight, but the other direction
 	facing.turnRight() --going counterclockwise once
 	facing.turnRight()
 	facing.save()
-	return turtle.turnRight()
+	return turtle.turnLeft()
 end
 
 env.refuel = function( n ) --needed because we depend on fuel level
@@ -226,7 +225,10 @@ _G.gps.locate = function( n, b )
 	return x, y, z
 end
 
-position.load() --this needs to be called before facing, for GPS to work properly
-facing.load() --just loading stuff
+facing.load()
+position.load()
 fuel.load()
-position.update() --and updating our coords
+
+fuel.save()
+position.save()
+facing.save()
