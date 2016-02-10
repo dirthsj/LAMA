@@ -21,8 +21,7 @@ local env = getfenv()
 local fuel = {}
 local facing = {}
 local position = {}
-local leftEquipment = {}
-local rightEquipment = {}
+local equipment = {}
 
 --Fuel tracking
 fuel.load = function() --loading fuel data
@@ -86,17 +85,18 @@ facing.load = function() --loads facing / current movement direction
 	end
 end
 
+--equipment tracking
 equipment.save = function()
 	local file = fs.open(".lama/equipment","w")
-	file.write(textutils.serialize({leftEquipment, rightEquipment})
+	file.write(textutils.serialize({equipment.left,equipment.right})
 end
 
 equipment.load = function()
 	if fs.exists(".lama/equipment") then
 		local file = fs.open(".lama/equipment", "r") 
-		equipmentLeft,equipmentRight = unpack(textutils.unserialize(file.readAll()))
+		equipment.left, equipment.right = unpack(textutils.unserialize(file.readAll()))
 	else
-		equipmentLeft,equipmentRight = {},{}
+		equipment = {left={},right={}} --assume nothing
 	end
 end
 
@@ -218,7 +218,7 @@ env.equipLeft = function()
 	local tData = turtle.getItemDetail()
 	local bOk = turtle.equipLeft()
 	if bOk then
-		equipmentLeft = tData
+		equipment.left = tData
 		equipment.save
 	end
 end
@@ -227,7 +227,7 @@ env.equipRight = function()
 	local tData = turtle.getItemDetail()
 	local bOk = turtle.equipRight()
 	if bOk then
-		equipmentRight = tData
+		equipment.right = tData
 		equipment.save
 	end
 end
