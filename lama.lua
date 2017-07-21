@@ -21,6 +21,7 @@ local env = getfenv()
 local fuel = {}
 local facing = {}
 local position = {}
+local equipment = {}
 
 --Fuel tracking
 fuel.load = function() --loading fuel data
@@ -81,6 +82,21 @@ facing.load = function() --loads facing / current movement direction
 		else
 			facing.face = "north" --we couldn't move forward, something was obstructing
 		end
+	end
+end
+
+--equipment tracking
+equipment.save = function()
+	local file = fs.open(".lama/equipment","w")
+	file.write(textutils.serialize({equipment.left,equipment.right})
+end
+
+equipment.load = function()
+	if fs.exists(".lama/equipment") then
+		local file = fs.open(".lama/equipment", "r") 
+		equipment.left, equipment.right = unpack(textutils.unserialize(file.readAll()))
+	else
+		equipment = {left={},right={}} --assume nothing
 	end
 end
 
@@ -196,6 +212,24 @@ env.refuel = function( n ) --needed because we depend on fuel level
 		return true
 	end
 	return false --otherwise, return false
+end
+
+env.equipLeft = function()
+	local tData = turtle.getItemDetail()
+	local bOk = turtle.equipLeft()
+	if bOk then
+		equipment.left = tData
+		equipment.save
+	end
+end
+
+env.equipRight = function()
+	local tData = turtle.getItemDetail()
+	local bOk = turtle.equipRight()
+	if bOk then
+		equipment.right = tData
+		equipment.save
+	end
 end
 
 env.overwrite = function( t ) --writes env values into the table given
